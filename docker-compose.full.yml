@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: cassino-postgres
+    restart: unless-stopped
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_USER: cassino_user
+      POSTGRES_PASSWORD: cassino_password
+      POSTGRES_DB: cassino_db
+      PGDATA: /data/postgres
+    volumes:
+      - postgres_data:/data/postgres
+    networks:
+      - cassino-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U cassino_user -d cassino_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Node.js API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cassino-api
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://cassino_user:cassino_password@postgres:5432/cassino_db?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 24h
+      PORT: 3000
+      ASAAS_API_KEY: ${ASAAS_API_KEY}
+      ASAAS_API_URL: ${ASAAS_API_URL}
+      PGSOFT_API_URL: ${PGSOFT_API_URL}
+      PGSOFT_AGENT_ID: ${PGSOFT_AGENT_ID}
+      PGSOFT_SECRET_KEY: ${PGSOFT_SECRET_KEY}
+      APP_URL: http://localhost:3000
+      FRONTEND_URL: ${FRONTEND_URL}
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - cassino-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "npx prisma migrate deploy && node dist/app.js"
+
+  # PGAdmin (opcional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cassino-pgadmin
+    restart: unless-stopped
+    ports:
+      - '5050:80'
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@cassino.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - cassino-network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  cassino-network:
+    driver: bridge
+

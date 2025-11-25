@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: cassino-postgres
+    restart: unless-stopped
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_USER: cassino_user
+      POSTGRES_PASSWORD: cassino_password
+      POSTGRES_DB: cassino_db
+      PGDATA: /data/postgres
+    volumes:
+      - postgres_data:/data/postgres
+    networks:
+      - cassino-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U cassino_user -d cassino_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PGAdmin (opcional - interface gráfica para o PostgreSQL)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cassino-pgadmin
+    restart: unless-stopped
+    ports:
+      - '5050:80'
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@cassino.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - cassino-network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  cassino-network:
+    driver: bridge
+
