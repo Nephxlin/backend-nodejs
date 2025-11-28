@@ -93,3 +93,4 @@ Agora quando um usuário fizer um depósito:
 Esta correção afeta **apenas novos depósitos**. Depósitos já processados anteriormente não serão corrigidos automaticamente. Se necessário, pode-se criar um script de migração para ajustar depósitos anteriores.
 
 
+

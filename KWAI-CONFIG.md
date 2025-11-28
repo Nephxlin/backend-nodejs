@@ -141,3 +141,4 @@ WHERE id = 1;
 **Pixel ID:** 296262408561528  
 **Status:** ✅ Configurado no Banco
 
+
