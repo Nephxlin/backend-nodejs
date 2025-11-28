@@ -20,6 +20,14 @@ import pgsoftRoutes from './routes/pgsoft.routes';
 const app: Application = express();
 
 // ============================================
+// CONFIGURAÇÕES DO EXPRESS
+// ============================================
+
+// Trust proxy - necessário para Coolify/proxies reversos
+// Permite que o Express leia corretamente o IP real do cliente através de headers X-Forwarded-*
+app.set('trust proxy', 1);
+
+// ============================================
 // MIDDLEWARES GLOBAIS
 // ============================================
 
