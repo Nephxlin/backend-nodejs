@@ -77,13 +77,31 @@ npx prisma migrate dev --name init
 npx prisma db push
 ```
 
-## 🌱 Passo 5: (Opcional) Popular Banco com Dados Iniciais
+## 🌱 Passo 5: Popular Banco com Dados Iniciais
 
-Se quiser criar dados iniciais (configurações, categorias, etc):
+**IMPORTANTE:** Execute o seed para criar o usuário admin e configurações iniciais:
 
 ```bash
-npm run prisma:seed
+npm run seed
 ```
+
+O seed criará:
+- ✅ Configurações do sistema
+- ✅ Moeda BRL
+- ✅ Gateway Asaas
+- ✅ 5 Níveis VIP (Bronze, Prata, Ouro, Platina, Diamante)
+- ✅ 5 Categorias de jogos
+- ✅ Configuração da roleta
+- ✅ **Usuário Admin** (admin@cassino.com / admin123)
+- ✅ Carteira do admin com R$ 10.000
+- ✅ Banner de exemplo
+
+**Credenciais do Admin:**
+- Email: `admin@cassino.com`
+- Senha: `admin123`
+- Código de Convite: `ADMIN001`
+
+⚠️ **IMPORTANTE:** Altere a senha do admin em produção!
 
 ## 🚀 Passo 6: Iniciar o Servidor
 

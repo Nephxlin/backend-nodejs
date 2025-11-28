@@ -4,6 +4,7 @@ import { config } from '../config/env';
 export interface JWTPayload {
   id: number;
   email: string;
+  isAdmin?: boolean;
 }
 
 /**

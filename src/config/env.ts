@@ -7,7 +7,7 @@ export const config = {
   port: parseInt(process.env.PORT || '3000'),
   nodeEnv: process.env.NODE_ENV || 'development',
   appUrl: process.env.APP_URL || 'http://localhost:3000',
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3006',
 
   // Database
   databaseUrl: process.env.DATABASE_URL || '',
@@ -25,6 +25,11 @@ export const config = {
     apiKey: process.env.ASAAS_API_KEY || '',
     apiUrl: process.env.ASAAS_API_URL || 'https://www.asaas.com/api/v3',
     walletId: process.env.ASAAS_WALLET_ID || '',
+  },
+
+  // Asaas Payment API (Microservice)
+  asaasPaymentApi: {
+    baseUrl: process.env.ASAAS_PAYMENT_API_URL || 'http://localhost:3000',
   },
 
   // PGSoft

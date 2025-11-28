@@ -82,6 +82,7 @@ export class AuthController {
       const token = generateToken({
         id: userId,
         email: req.user!.email,
+        isAdmin: req.user!.isAdmin,
       });
 
       return successResponse(res, {

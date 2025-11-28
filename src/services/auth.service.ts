@@ -12,6 +12,8 @@ interface RegisterData {
   password: string;
   name?: string;
   referenceCode?: string;
+  acceptReferralBonus?: boolean;
+  acceptSignupBonus?: boolean;
   spinToken?: string;
 }
 
@@ -82,6 +84,9 @@ export class AuthService {
       },
     });
 
+    // Criar carteira
+    await this.createWallet(user.id);
+
     // Processar código de referência (afiliado)
     if (data.referenceCode) {
       const affiliate = await prisma.user.findUnique({
@@ -94,13 +99,100 @@ export class AuthService {
           data: { inviter: affiliate.id },
         });
 
+        // Aplicar bônus de indicação (somente se aceito)
+        const acceptBonus = data.acceptReferralBonus !== false; // Default true
+        const settings = await this.getSetting();
+        const referralBonus = Number(settings.referralBonus);
+        const rollover = Number(settings.depositBonusRollover);
+
+        if (referralBonus > 0 && acceptBonus) {
+          // Dar bônus ao NOVO USUÁRIO
+          await prisma.wallet.update({
+            where: { userId: user.id },
+            data: {
+              balanceBonus: { increment: referralBonus },
+              balanceBonusRollover: referralBonus * rollover,
+            },
+          });
+
+          // Registrar histórico do novo usuário
+          await prisma.walletChange.create({
+            data: {
+              userId: user.id,
+              amount: referralBonus,
+              beforeBalance: 0,
+              afterBalance: referralBonus,
+              type: 'referral_bonus',
+              description: `Bônus de indicação recebido de ${affiliate.name}`,
+            },
+          });
+
+          // Dar bônus ao INDICADOR
+          const indicadorWallet = await prisma.wallet.findUnique({
+            where: { userId: affiliate.id },
+          });
+
+          if (indicadorWallet) {
+            await prisma.wallet.update({
+              where: { userId: affiliate.id },
+              data: {
+                balanceBonus: { increment: referralBonus },
+                balanceBonusRollover: { 
+                  increment: referralBonus * rollover 
+                },
+              },
+            });
+
+            // Registrar histórico do indicador
+            await prisma.walletChange.create({
+              data: {
+                userId: affiliate.id,
+                amount: referralBonus,
+                beforeBalance: Number(indicadorWallet.balanceBonus),
+                afterBalance: Number(indicadorWallet.balanceBonus) + referralBonus,
+                type: 'referral_bonus',
+                description: `Bônus por indicação - Usuário: ${user.name}`,
+              },
+            });
+          }
+        }
+
         // Salvar histórico de afiliado
         await this.saveAffiliateHistory(user.id, affiliate);
       }
     }
 
-    // Criar carteira
-    await this.createWallet(user.id);
+    // Aplicar bonus de cadastro se configurado E se aceito pelo usuário
+    const acceptSignupBonus = data.acceptSignupBonus !== false; // Default true
+    const settings = await this.getSetting();
+    if (settings && Number(settings.signupBonus) > 0 && acceptSignupBonus) {
+      const signupBonus = Number(settings.signupBonus);
+      const rolloverMultiplier = Number(settings.depositBonusRollover);
+      
+      await prisma.wallet.update({
+        where: { userId: user.id },
+        data: {
+          balanceBonus: {
+            increment: signupBonus,
+          },
+          balanceBonusRollover: {
+            increment: signupBonus * rolloverMultiplier,
+          },
+        },
+      });
+
+      // Registrar histórico do signup bonus
+      await prisma.walletChange.create({
+        data: {
+          userId: user.id,
+          amount: signupBonus,
+          beforeBalance: 0,
+          afterBalance: signupBonus,
+          type: 'signup_bonus',
+          description: `Bônus de cadastro: ${settings.prefix}${signupBonus.toFixed(2)}`,
+        },
+      });
+    }
 
     // Processar spin token (se houver)
     if (data.spinToken) {
@@ -111,6 +203,7 @@ export class AuthService {
     const token = generateToken({
       id: user.id,
       email: user.email,
+      isAdmin: user.isAdmin,
     });
 
     // Buscar usuário completo com wallet
@@ -167,6 +260,7 @@ export class AuthService {
     const token = generateToken({
       id: user.id,
       email: user.email,
+      isAdmin: user.isAdmin,
     });
 
     return {

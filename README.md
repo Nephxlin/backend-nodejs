@@ -34,8 +34,9 @@ npm run prisma:generate
 # 5. Criar tabelas no banco
 npx prisma db push
 
-# 6. Seed (opcional)
-npm run prisma:seed
+# 6. Popular banco com dados iniciais (IMPORTANTE)
+npm run seed
+# Isso criará o usuário admin: admin@cassino.com / admin123
 ```
 
 📖 **Ver guia completo:** [DOCKER.md](DOCKER.md)

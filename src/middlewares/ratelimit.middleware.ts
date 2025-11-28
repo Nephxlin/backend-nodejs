@@ -4,7 +4,7 @@ import rateLimit from 'express-rate-limit';
  * Rate limiter geral
  */
 export const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 1, // 15 minutos
   max: 100, // 100 requisições por IP
   message: {
     status: false,
@@ -18,7 +18,7 @@ export const generalLimiter = rateLimit({
  * Rate limiter para autenticação (mais restritivo)
  */
 export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 1, // 15 minutos
   max: 5, // 5 tentativas de login
   message: {
     status: false,

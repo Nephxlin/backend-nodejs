@@ -14,6 +14,8 @@ import profileRoutes from './routes/profile.routes';
 import missionsRoutes from './routes/missions.routes';
 import spinRoutes from './routes/spin.routes';
 import settingsRoutes from './routes/settings.routes';
+import adminRoutes from './routes/admin.routes';
+import pgsoftRoutes from './routes/pgsoft.routes';
 
 const app: Application = express();
 
@@ -21,17 +23,22 @@ const app: Application = express();
 // MIDDLEWARES GLOBAIS
 // ============================================
 
-// CORS
+// CORS - Permitir múltiplas origens para desenvolvimento
 app.use(
   cors({
-    origin: config.frontendUrl,
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3005', 'http://localhost:3006', 'http://localhost:5173'],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
 // Body parser
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '30mb' })); // Aumentar limite para upload de imagens
+app.use(express.urlencoded({ extended: true, limit: '30mb' }));
+
+// Servir arquivos estáticos (uploads)
+app.use('/uploads', express.static('uploads'));
 
 // Rate limiting
 app.use(generalLimiter);
@@ -62,6 +69,8 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/missions', missionsRoutes);
 app.use('/api/spin', spinRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/pgsoft', pgsoftRoutes); // Callbacks do PGSoft
 
 // ============================================
 // TRATAMENTO DE ERROS

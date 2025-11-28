@@ -1,9 +1,9 @@
 import prisma from '../config/database';
-import { AsaasIntegration } from '../integrations/asaas.integration';
+import { AsaasPaymentApiIntegration } from '../integrations/asaas-payment-api.integration';
 import { WalletService } from './wallet.service';
 import logger from '../config/logger';
 
-const asaasIntegration = new AsaasIntegration();
+const asaasPaymentApiIntegration = new AsaasPaymentApiIntegration();
 const walletService = new WalletService();
 
 export class DepositService {
@@ -31,28 +31,29 @@ export class DepositService {
     const externalId = `DEP_${userId}_${Date.now()}_${Math.floor(Math.random() * 9999)}`;
     const description = `Depósito - ${setting.prefix} ${amount.toFixed(2)}`;
 
-    // Gerar QR Code via Asaas
-    const pixResult = await asaasIntegration.generatePixQrCode({
+    // Gerar QR Code via Asaas Payment API (microservice)
+    const qrCodeResult = await asaasPaymentApiIntegration.generateQrCode(
       userId,
       amount,
       externalId,
-      description,
-    });
+      description
+    );
 
-    if (!pixResult.success) {
-      throw new Error(pixResult.message || 'Erro ao gerar QR Code');
+    if (!qrCodeResult.success) {
+      throw new Error(qrCodeResult.error || 'Erro ao gerar QR Code');
     }
 
-    // Criar transação
+    // Criar transação no nosso banco
     await this.createTransaction(userId, externalId, amount, acceptBonus);
 
-    // Criar depósito
+    // Criar depósito no nosso banco
     await this.createDeposit(userId, externalId, amount);
 
     return {
       success: true,
       idTransaction: externalId,
-      qrcode: pixResult.qrcode,
+      qrcode: qrCodeResult.qrcode,
+      qrcodeImage: qrCodeResult.qrcodeImage,
     };
   }
 
@@ -74,19 +75,19 @@ export class DepositService {
 
     // Se já está confirmada, retornar
     if (transaction.status === 1) {
-      return { status: 'PAID' };
+      return { status: 1, paid: true };
     }
 
-    // Verificar na Asaas
-    const asaasStatus = await asaasIntegration.verifyPayment(externalId);
+    // Verificar na Asaas Payment API
+    const paymentStatus = await asaasPaymentApiIntegration.verifyPayment(externalId);
 
-    if (asaasStatus.paid) {
+    if (paymentStatus.paid) {
       // Finalizar pagamento
       await this.finalizePayment(externalId);
-      return { status: 'PAID' };
+      return { status: 1, paid: true };
     }
 
-    return { status: asaasStatus.status || 'PENDING' };
+    return { status: 0, paid: false };
   }
 
   /**
@@ -156,13 +157,23 @@ export class DepositService {
         },
       });
 
-      // Adicionar saldo principal
+      // Adicionar saldo principal (jogável)
       await walletService.addBalance(
         user.id,
         Number(transaction.price),
         'balance',
         `Depósito via PIX - ${externalId}`
       );
+
+      // Adicionar saldo disponível para saque
+      await prisma.wallet.update({
+        where: { id: wallet.id },
+        data: {
+          balanceWithdrawal: {
+            increment: Number(transaction.price),
+          },
+        },
+      });
 
       // Atualizar transação
       await prisma.transaction.update({

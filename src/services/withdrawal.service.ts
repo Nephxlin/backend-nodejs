@@ -1,8 +1,5 @@
 import prisma from '../config/database';
-import { WalletService } from './wallet.service';
 import logger from '../config/logger';
-
-const walletService = new WalletService();
 
 export class WithdrawalService {
   /**
@@ -29,7 +26,7 @@ export class WithdrawalService {
       );
     }
 
-    // Verificar saldo
+    // Buscar carteira
     const wallet = await prisma.wallet.findUnique({
       where: { userId },
     });
@@ -38,23 +35,33 @@ export class WithdrawalService {
       throw new Error('Carteira não encontrada');
     }
 
-    // Calcular saldo disponível para saque
-    const availableBalance = Number(wallet.balance) + Number(wallet.balanceWithdrawal);
-
-    if (availableBalance < amount) {
-      throw new Error('Saldo insuficiente');
+    // Verificar se há rollover pendente
+    const bonusRollover = Number(wallet.balanceBonusRollover);
+    const depositRollover = Number(wallet.balanceDepositRollover);
+    
+    if (bonusRollover > 0 || depositRollover > 0) {
+      const totalRollover = bonusRollover + depositRollover;
+      throw new Error(
+        `Você precisa cumprir o rollover antes de sacar. Faltam ${setting.prefix}${totalRollover.toFixed(2)} em apostas.`
+      );
     }
 
-    // Verificar rollover (proteção de rollover)
-    if (setting.rolloverProtection) {
-      const totalRollover =
-        Number(wallet.balanceDepositRollover) + Number(wallet.balanceBonusRollover);
+    // Verificar saldo disponível para saque
+    const availableBalance = Number(wallet.balanceWithdrawal);
 
-      if (totalRollover > 0) {
-        throw new Error(
-          'Você precisa completar o rollover antes de solicitar um saque'
-        );
-      }
+    if (availableBalance < amount) {
+      throw new Error(
+        `Saldo insuficiente para saque. Disponível: ${setting.prefix}${availableBalance.toFixed(2)}`
+      );
+    }
+
+    // Verificar se usuário está banido
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (user?.banned) {
+      throw new Error('Sua conta está suspensa. Entre em contato com o suporte.');
     }
 
     // Criar saque
@@ -64,98 +71,49 @@ export class WithdrawalService {
         amount,
         pixKey,
         pixType,
+        status: 0, // Pendente
         currency: wallet.currency,
         symbol: wallet.symbol,
-        status: 0, // Pendente
       },
     });
 
-    // Subtrair saldo (bloqueado até aprovação)
-    await walletService.subtractBalance(
-      userId,
-      amount,
-      'balance',
-      `Saque solicitado - ID: ${withdrawal.id}`
+    // Deduzir do saldo de saque E do saldo para jogar
+    await prisma.wallet.update({
+      where: { userId },
+      data: {
+        balanceWithdrawal: {
+          decrement: amount,
+        },
+        balance: {
+          decrement: amount,
+        },
+      },
+    });
+
+    // Registrar mudança na carteira
+    await prisma.walletChange.create({
+      data: {
+        userId,
+        amount: -amount,
+        beforeBalance: availableBalance,
+        afterBalance: availableBalance - amount,
+        type: 'withdrawal_request',
+        description: `Solicitação de saque - ${pixType}: ${pixKey}`,
+      },
+    });
+
+    logger.info(
+      `Saque solicitado: Usuário ${userId}, Valor: ${amount}, PIX: ${pixType}`
     );
 
-    logger.info('Saque solicitado', {
-      userId,
-      amount,
-      withdrawalId: withdrawal.id,
-    });
-
     return {
-      success: true,
-      withdrawal,
-      message: 'Saque solicitado com sucesso. Aguarde a aprovação.',
-    };
-  }
-
-  /**
-   * Aprovar saque (admin)
-   */
-  async approveWithdrawal(withdrawalId: number) {
-    const withdrawal = await prisma.withdrawal.findUnique({
-      where: { id: withdrawalId },
-    });
-
-    if (!withdrawal) {
-      throw new Error('Saque não encontrado');
-    }
-
-    if (withdrawal.status !== 0) {
-      throw new Error('Saque já foi processado');
-    }
-
-    // Atualizar status
-    await prisma.withdrawal.update({
-      where: { id: withdrawalId },
-      data: { status: 1 }, // Aprovado
-    });
-
-    logger.info('Saque aprovado', { withdrawalId, userId: withdrawal.userId });
-
-    return {
-      success: true,
-      message: 'Saque aprovado com sucesso',
-    };
-  }
-
-  /**
-   * Recusar saque (admin)
-   */
-  async rejectWithdrawal(withdrawalId: number, reason?: string) {
-    const withdrawal = await prisma.withdrawal.findUnique({
-      where: { id: withdrawalId },
-    });
-
-    if (!withdrawal) {
-      throw new Error('Saque não encontrado');
-    }
-
-    if (withdrawal.status !== 0) {
-      throw new Error('Saque já foi processado');
-    }
-
-    // Atualizar status
-    await prisma.withdrawal.update({
-      where: { id: withdrawalId },
-      data: { status: 2 }, // Recusado
-    });
-
-    // Devolver saldo ao usuário
-    await walletService.addBalance(
-      withdrawal.userId,
-      Number(withdrawal.amount),
-      'balance',
-      `Saque recusado - ID: ${withdrawal.id}${reason ? ` - Motivo: ${reason}` : ''}`
-    );
-
-    logger.info('Saque recusado', { withdrawalId, userId: withdrawal.userId, reason });
-
-    return {
-      success: true,
-      message: 'Saque recusado e saldo devolvido ao usuário',
+      id: withdrawal.id,
+      amount: Number(withdrawal.amount),
+      pixKey: withdrawal.pixKey,
+      pixType: withdrawal.pixType,
+      status: withdrawal.status,
+      statusText: 'Pendente',
+      createdAt: withdrawal.createdAt,
     };
   }
 
@@ -168,9 +126,11 @@ export class WithdrawalService {
     const [withdrawals, total] = await Promise.all([
       prisma.withdrawal.findMany({
         where: { userId },
-        orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
       }),
       prisma.withdrawal.count({
         where: { userId },
@@ -178,68 +138,117 @@ export class WithdrawalService {
     ]);
 
     return {
-      withdrawals,
+      withdrawals: withdrawals.map((wd) => ({
+        id: wd.id,
+        amount: Number(wd.amount),
+        status: wd.status,
+        statusText: this.getStatusText(wd.status),
+        pixKey: wd.pixKey,
+        pixType: wd.pixType,
+        currency: wd.currency,
+        symbol: wd.symbol,
+        createdAt: wd.createdAt,
+        updatedAt: wd.updatedAt,
+      })),
       pagination: {
-        total,
         page,
         limit,
+        total,
         totalPages: Math.ceil(total / limit),
       },
     };
   }
 
   /**
-   * Listar todos os saques pendentes (admin)
+   * Cancelar saque (se ainda estiver pendente)
    */
-  async listPendingWithdrawals(page: number = 1, limit: number = 20) {
-    const skip = (page - 1) * limit;
+  async cancelWithdrawal(withdrawalId: number, userId: number) {
+    const withdrawal = await prisma.withdrawal.findFirst({
+      where: {
+        id: withdrawalId,
+        userId,
+      },
+    });
 
-    const [withdrawals, total] = await Promise.all([
-      prisma.withdrawal.findMany({
-        where: { status: 0 },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              cpf: true,
-            },
+    if (!withdrawal) {
+      throw new Error('Saque não encontrado');
+    }
+
+    if (withdrawal.status !== 0) {
+      throw new Error('Apenas saques pendentes podem ser cancelados');
+    }
+
+    // Atualizar status para cancelado
+    await prisma.withdrawal.update({
+      where: { id: withdrawalId },
+      data: {
+        status: 2, // Cancelado
+      },
+    });
+
+    // Devolver valor para carteira
+    const wallet = await prisma.wallet.findUnique({
+      where: { userId },
+    });
+
+    if (wallet) {
+      const currentBalance = Number(wallet.balanceWithdrawal);
+      const amount = Number(withdrawal.amount);
+
+      await prisma.wallet.update({
+        where: { userId },
+        data: {
+          balanceWithdrawal: {
+            increment: amount,
+          },
+          balance: {
+            increment: amount,
           },
         },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      prisma.withdrawal.count({
-        where: { status: 0 },
-      }),
-    ]);
+      });
 
-    return {
-      withdrawals,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  /**
-   * Obter configurações do sistema
-   */
-  private async getSetting() {
-    let setting = await prisma.setting.findFirst();
-
-    if (!setting) {
-      setting = await prisma.setting.create({
-        data: {},
+      // Registrar mudança
+      await prisma.walletChange.create({
+        data: {
+          userId,
+          amount,
+          beforeBalance: currentBalance,
+          afterBalance: currentBalance + amount,
+          type: 'withdrawal_cancelled',
+          description: `Saque cancelado - ID: ${withdrawalId}`,
+        },
       });
     }
 
+    logger.info(`Saque cancelado: ID ${withdrawalId}, Usuário ${userId}`);
+
+    return {
+      success: true,
+      message: 'Saque cancelado com sucesso',
+    };
+  }
+
+  /**
+   * Obter configurações
+   */
+  private async getSetting() {
+    const setting = await prisma.setting.findFirst();
+    if (!setting) {
+      throw new Error('Configurações não encontradas');
+    }
     return setting;
   }
-}
 
+  /**
+   * Obter texto do status
+   */
+  private getStatusText(status: number): string {
+    const statusMap: { [key: number]: string } = {
+      0: 'Pendente',
+      1: 'Aprovado',
+      2: 'Cancelado',
+      3: 'Rejeitado',
+    };
+    return statusMap[status] || 'Desconhecido';
+  }
+}

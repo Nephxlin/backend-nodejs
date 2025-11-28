@@ -197,7 +197,10 @@ echo 'DATABASE_URL="postgresql://cassino_user:cassino_password@localhost:5433/ca
 npm run prisma:generate
 npx prisma db push
 
-# 5. Iniciar API em desenvolvimento
+# 5. Popular banco com dados iniciais (admin, configurações)
+npm run seed
+
+# 6. Iniciar API em desenvolvimento
 npm run dev
 ```
 

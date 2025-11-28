@@ -10,6 +10,7 @@ declare global {
       user?: {
         id: number;
         email: string;
+        isAdmin?: boolean;
       };
     }
   }
@@ -51,6 +52,7 @@ export async function authMiddleware(
         email: true,
         name: true,
         banned: true,
+        isAdmin: true,
       },
     });
 
@@ -66,6 +68,7 @@ export async function authMiddleware(
     req.user = {
       id: user.id,
       email: user.email,
+      isAdmin: user.isAdmin,
     };
 
     next();
@@ -97,6 +100,7 @@ export async function optionalAuthMiddleware(
           select: {
             id: true,
             email: true,
+            isAdmin: true,
           },
         });
 
@@ -104,6 +108,7 @@ export async function optionalAuthMiddleware(
           req.user = {
             id: user.id,
             email: user.email,
+            isAdmin: user.isAdmin,
           };
         }
       }
