@@ -265,7 +265,7 @@ async function main() {
   
   console.log('\n🔐 Credenciais do Admin:');
   console.log('   Email: admin@cassino.com');
-  console.log('   Senha: admin123');
+  console.log('   Senha: Parafal007@#$');
   console.log('   Código de Convite: ADMIN001');
   console.log('\n⚠️  IMPORTANTE: Altere a senha em produção!\n');
 }
