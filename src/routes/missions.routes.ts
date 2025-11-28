@@ -11,7 +11,7 @@ router.use(authMiddleware);
  * @desc Listar missões disponíveis
  * @access Private
  */
-router.get('/', (req, res) => {
+router.get('/', (_req, res) => {
   res.json({ status: true, message: 'Missions endpoint - Em implementação' });
 });
 

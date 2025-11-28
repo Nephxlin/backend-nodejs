@@ -8,7 +8,7 @@ export class AdminKwaiPixelsController {
   /**
    * Listar todos os pixels Kwai
    */
-  async listPixels(req: Request, res: Response): Promise<Response> {
+  async listPixels(_req: Request, res: Response): Promise<Response> {
     try {
       const result = await kwaiPixelsService.listPixels();
       return successResponse(res, result);
@@ -95,7 +95,7 @@ export class AdminKwaiPixelsController {
   /**
    * Listar pixels ativos (para o frontend usar)
    */
-  async listActivePixels(req: Request, res: Response): Promise<Response> {
+  async listActivePixels(_req: Request, res: Response): Promise<Response> {
     try {
       const result = await kwaiPixelsService.listActivePixels();
       return successResponse(res, result);
@@ -104,5 +104,7 @@ export class AdminKwaiPixelsController {
     }
   }
 }
+
+
 
 

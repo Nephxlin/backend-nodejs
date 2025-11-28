@@ -21,8 +21,6 @@ import { AdminKwaiPixelsController } from '../controllers/admin/kwai-pixels.cont
 import {
   updateUserSchema,
   adjustWalletSchema,
-  updateDepositStatusSchema,
-  updateWithdrawalStatusSchema,
   createGameSchema,
   updateGameSchema,
   createProviderSchema,

@@ -9,7 +9,7 @@ export function errorMiddleware(
   error: any,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): Response {
   // Log do erro
   logger.error('Erro capturado:', {

@@ -6,7 +6,7 @@ export class SettingsController {
   /**
    * Obter configurações públicas
    */
-  async getSettings(req: Request, res: Response): Promise<Response> {
+  async getSettings(_req: Request, res: Response): Promise<Response> {
     try {
       const settings = await prisma.setting.findFirst();
 
@@ -40,7 +40,7 @@ export class SettingsController {
   /**
    * Listar banners ativos
    */
-  async getBanners(req: Request, res: Response): Promise<Response> {
+  async getBanners(_req: Request, res: Response): Promise<Response> {
     try {
       const banners = await prisma.banner.findMany({
         where: {
@@ -69,7 +69,7 @@ export class SettingsController {
   /**
    * Listar categorias
    */
-  async getCategories(req: Request, res: Response): Promise<Response> {
+  async getCategories(_req: Request, res: Response): Promise<Response> {
     try {
       const categories = await prisma.category.findMany({
         orderBy: {
@@ -95,7 +95,7 @@ export class SettingsController {
   /**
    * Listar providers
    */
-  async getProviders(req: Request, res: Response): Promise<Response> {
+  async getProviders(_req: Request, res: Response): Promise<Response> {
     try {
       const providers = await prisma.provider.findMany({
         where: {
@@ -168,7 +168,6 @@ export class SettingsController {
               name: cg.game.gameName,
               code: cg.game.gameCode,
               cover: cg.game.cover,
-              banner: cg.game.banner,
               status: cg.game.status,
               provider: {
                 id: cg.game.provider.id,
@@ -186,7 +185,7 @@ export class SettingsController {
   /**
    * Obter pixels Kwai ativos (públicos, sem access token)
    */
-  async getKwaiPixels(req: Request, res: Response): Promise<Response> {
+  async getKwaiPixels(_req: Request, res: Response): Promise<Response> {
     try {
       const pixels = await prisma.kwaiPixel.findMany({
         where: {

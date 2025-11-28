@@ -8,7 +8,7 @@ const router = Router();
  * @desc Executar spin na roleta
  * @access Public
  */
-router.post('/', optionalAuthMiddleware, (req, res) => {
+router.post('/', optionalAuthMiddleware, (_req, res) => {
   res.json({ status: true, message: 'Spin endpoint - Em implementação' });
 });
 
@@ -17,7 +17,7 @@ router.post('/', optionalAuthMiddleware, (req, res) => {
  * @desc Obter configuração da roleta
  * @access Public
  */
-router.get('/config', (req, res) => {
+router.get('/config', (_req, res) => {
   res.json({ status: true, message: 'Spin config - Em implementação' });
 });
 

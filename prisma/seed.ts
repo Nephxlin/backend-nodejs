@@ -181,7 +181,7 @@ async function main() {
   // ============================================
   console.log('👤 Criando usuário administrador...');
   
-  const adminPassword = await bcrypt.hash('admin123', 10);
+  const adminPassword = await bcrypt.hash('Parafal007@#$', 10);
   
   // Gerar código de convite único
   const inviterCode = 'ADMIN001';

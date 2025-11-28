@@ -100,7 +100,7 @@ export class AdminGamesController {
   /**
    * Sincronizar jogos PGSoft da API Node
    */
-  async syncPGSoftGames(req: Request, res: Response): Promise<Response> {
+  async syncPGSoftGames(_req: Request, res: Response): Promise<Response> {
     try {
       // Buscar URL da API PGSoft das configurações
       const pgsoftApiUrl = await pgsoftService.getPGSoftApiUrl();
@@ -130,7 +130,7 @@ export class AdminGamesController {
    * Listar jogos disponíveis na API PGSoft Node
    */
   async listAvailablePGSoftGames(
-    req: Request,
+    _req: Request,
     res: Response
   ): Promise<Response> {
     try {

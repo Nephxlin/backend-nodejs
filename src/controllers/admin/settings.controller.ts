@@ -5,7 +5,7 @@ import { successResponse, errorResponse } from '../../utils/response';
 const settingsService = new AdminSettingsService();
 
 export class AdminSettingsController {
-  async getSettings(req: Request, res: Response): Promise<Response> {
+  async getSettings(_req: Request, res: Response): Promise<Response> {
     try {
       const result = await settingsService.getSettings();
       return successResponse(res, result);
@@ -23,7 +23,7 @@ export class AdminSettingsController {
     }
   }
 
-  async getGamesKeys(req: Request, res: Response): Promise<Response> {
+  async getGamesKeys(_req: Request, res: Response): Promise<Response> {
     try {
       const result = await settingsService.getGamesKeys();
       return successResponse(res, result);
@@ -41,7 +41,7 @@ export class AdminSettingsController {
     }
   }
 
-  async listGateways(req: Request, res: Response): Promise<Response> {
+  async listGateways(_req: Request, res: Response): Promise<Response> {
     try {
       const result = await settingsService.listGateways();
       return successResponse(res, result);

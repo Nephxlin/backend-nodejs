@@ -13,7 +13,7 @@ export class DepositService {
   async createPixDeposit(
     userId: number,
     amount: number,
-    cpf: string,
+    _cpf: string,
     acceptBonus: boolean = false
   ) {
     // Validar valor mínimo e máximo

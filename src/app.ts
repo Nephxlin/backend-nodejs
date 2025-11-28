@@ -44,7 +44,7 @@ app.use('/uploads', express.static('uploads'));
 app.use(generalLimiter);
 
 // Logger de requisições
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   logger.info(`${req.method} ${req.path}`, {
     ip: req.ip,
     userAgent: req.headers['user-agent'],
@@ -57,7 +57,7 @@ app.use((req, res, next) => {
 // ============================================
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 

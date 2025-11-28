@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
 import logger from '../config/logger';
-import { successResponse, errorResponse } from '../utils/response.utils';
 
 export class PGSoftController {
   /**
@@ -66,8 +65,7 @@ export class PGSoftController {
         transaction_id,
         bet_amount,
         win_amount,
-        game_code,
-        round_id
+        game_code
       } = req.body;
 
       logger.info(`PGSoft Callback: Transação do usuário ${user_code}`, {

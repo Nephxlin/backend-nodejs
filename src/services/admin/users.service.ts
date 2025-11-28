@@ -1,5 +1,4 @@
 import prisma from '../../config/database';
-import bcrypt from 'bcrypt';
 
 export class AdminUsersService {
   /**
@@ -98,9 +97,6 @@ export class AdminUsersService {
     if (!user) {
       throw new Error('Usuário não encontrado');
     }
-
-    // Contar total de indicações
-    const totalReferrals = user.invitedUsers?.length || 0;
 
     // Remover senha do retorno
     const { password, ...userWithoutPassword } = user;

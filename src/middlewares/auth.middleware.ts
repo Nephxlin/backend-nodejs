@@ -82,7 +82,7 @@ export async function authMiddleware(
  */
 export async function optionalAuthMiddleware(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): Promise<void> {
   try {

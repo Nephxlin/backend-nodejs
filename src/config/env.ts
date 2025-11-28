@@ -14,7 +14,7 @@ export const config = {
 
   // JWT
   jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h',
+  jwtExpiresIn: (process.env.JWT_EXPIRES_IN || '90d') as string,
 
   // Currency
   currencyCode: process.env.CURRENCY_CODE || 'BRL',

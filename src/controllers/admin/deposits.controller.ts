@@ -28,7 +28,7 @@ export class AdminDepositsController {
     }
   }
 
-  async getDepositStats(req: Request, res: Response): Promise<Response> {
+  async getDepositStats(_req: Request, res: Response): Promise<Response> {
     try {
       const result = await depositsService.getDepositStats();
       return successResponse(res, result);

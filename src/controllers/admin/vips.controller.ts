@@ -5,7 +5,7 @@ import { successResponse, errorResponse } from '../../utils/response';
 const vipsService = new AdminVipsService();
 
 export class AdminVipsController {
-  async listVips(req: Request, res: Response): Promise<Response> {
+  async listVips(_req: Request, res: Response): Promise<Response> {
     try {
       const result = await vipsService.listVips();
       return successResponse(res, result);

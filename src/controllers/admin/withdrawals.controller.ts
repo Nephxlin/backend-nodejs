@@ -28,7 +28,7 @@ export class AdminWithdrawalsController {
     }
   }
 
-  async getWithdrawalStats(req: Request, res: Response): Promise<Response> {
+  async getWithdrawalStats(_req: Request, res: Response): Promise<Response> {
     try {
       const result = await withdrawalsService.getWithdrawalStats();
       return successResponse(res, result);
