@@ -93,14 +93,14 @@ model Transaction {
   id            Int      @id @default(autoincrement())
   paymentId     String?  @map("payment_id")
   reference     String?
-  userId        Int      @default(1) @map("user_id")
+  userId        Int      @map("user_id")
   paymentMethod String?  @map("payment_method")
-  price         Decimal  @default(0) @db.Decimal(20, 2)
+  price         Decimal  @db.Decimal(20, 2)
   currency      String   @default("BRL")
   acceptBonus   Boolean  @default(false) @map("accept_bonus")
   status        Int      @default(0)
   createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
   user          User     @relation(fields: [userId], references: [id])
 
   @@map("transactions")
