@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { config } from '../config/env';
 
 export class UploadService {
   private uploadDir = path.join(process.cwd(), 'uploads');
@@ -40,8 +41,9 @@ export class UploadService {
       // Salvar arquivo
       fs.writeFileSync(filepath, buffer);
 
-      // Retornar caminho relativo
-      return `${folder}/${filename}`;
+      // Retornar URL completa
+      const relativePath = `${folder}/${filename}`;
+      return `${config.appUrl}/uploads/${relativePath}`;
     } catch (error: any) {
       throw new Error(`Erro ao fazer upload da imagem: ${error.message}`);
     }
@@ -50,8 +52,14 @@ export class UploadService {
   /**
    * Deletar imagem
    */
-  async deleteImage(relativePath: string): Promise<void> {
+  async deleteImage(imagePathOrUrl: string): Promise<void> {
     try {
+      // Se for uma URL completa, extrair apenas o caminho relativo
+      let relativePath = imagePathOrUrl;
+      if (imagePathOrUrl.includes('/uploads/')) {
+        relativePath = imagePathOrUrl.split('/uploads/')[1];
+      }
+      
       const fullPath = path.join(this.uploadDir, relativePath);
       if (fs.existsSync(fullPath)) {
         fs.unlinkSync(fullPath);
