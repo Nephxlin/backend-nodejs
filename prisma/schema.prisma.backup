@@ -21,10 +21,10 @@ model User {
   banned                    Boolean             @default(false)
   inviter                   Int?
   inviterCode               String?             @unique @map("inviter_code")
-  affiliateRevenueShare     Decimal?            @default(0) @map("affiliate_revenue_share")
-  affiliateRevenueShareFake Decimal?            @default(0) @map("affiliate_revenue_share_fake")
-  affiliateCpa              Decimal?            @default(0) @map("affiliate_cpa")
-  affiliateBaseline         Decimal?            @default(0) @map("affiliate_baseline")
+  affiliateRevenueShare     Decimal?            @default(0) @map("affiliate_revenue_share") @db.Decimal(10, 2)
+  affiliateRevenueShareFake Decimal?            @default(0) @map("affiliate_revenue_share_fake") @db.Decimal(10, 2)
+  affiliateCpa              Decimal?            @default(0) @map("affiliate_cpa") @db.Decimal(10, 2)
+  affiliateBaseline         Decimal?            @default(0) @map("affiliate_baseline") @db.Decimal(10, 2)
   isDemoAgent               Boolean             @default(false) @map("is_demo_agent")
   isAdmin                   Boolean             @default(false) @map("is_admin")
   language                  String              @default("pt")
@@ -65,23 +65,23 @@ model Wallet {
   userId                 Int      @unique @map("user_id")
   currency               String   @default("BRL")
   symbol                 String   @default("R$")
-  balance                Decimal  @default(0)
-  balanceWithdrawal      Decimal  @default(0) @map("balance_withdrawal")
-  balanceDepositRollover Decimal  @default(0) @map("balance_deposit_rollover")
-  balanceBonus           Decimal  @default(0) @map("balance_bonus")
-  balanceBonusRollover   Decimal  @default(0) @map("balance_bonus_rollover")
-  balanceCryptocurrency  Decimal  @default(0) @map("balance_cryptocurrency")
-  balanceDemo            Decimal  @default(0) @map("balance_demo")
-  referRewards           Decimal  @default(0) @map("refer_rewards")
-  totalBet               Decimal  @default(0) @map("total_bet")
-  totalWon               Decimal  @default(0) @map("total_won")
-  totalLose              Decimal  @default(0) @map("total_lose")
-  lastWon                Decimal  @default(0) @map("last_won")
-  lastLose               Decimal  @default(0) @map("last_lose")
+  balance                Decimal  @default(0) @db.Decimal(20, 2)
+  balanceWithdrawal      Decimal  @default(0) @map("balance_withdrawal") @db.Decimal(20, 2)
+  balanceDepositRollover Decimal  @default(0) @map("balance_deposit_rollover") @db.Decimal(20, 2)
+  balanceBonus           Decimal  @default(0) @map("balance_bonus") @db.Decimal(20, 2)
+  balanceBonusRollover   Decimal  @default(0) @map("balance_bonus_rollover") @db.Decimal(20, 2)
+  balanceCryptocurrency  Decimal  @default(0) @map("balance_cryptocurrency") @db.Decimal(20, 2)
+  balanceDemo            Decimal  @default(0) @map("balance_demo") @db.Decimal(20, 2)
+  referRewards           Decimal  @default(0) @map("refer_rewards") @db.Decimal(20, 2)
+  totalBet               Decimal  @default(0) @map("total_bet") @db.Decimal(20, 2)
+  totalWon               Decimal  @default(0) @map("total_won") @db.Decimal(20, 2)
+  totalLose              Decimal  @default(0) @map("total_lose") @db.Decimal(20, 2)
+  lastWon                Decimal  @default(0) @map("last_won") @db.Decimal(20, 2)
+  lastLose               Decimal  @default(0) @map("last_lose") @db.Decimal(20, 2)
   hideBalance            Boolean  @default(false) @map("hide_balance")
   active                 Boolean  @default(true)
   vipLevel               Int      @default(0) @map("vip_level")
-  vipPoints              Decimal  @default(0) @map("vip_points")
+  vipPoints              Decimal  @default(0) @map("vip_points") @db.Decimal(20, 2)
   createdAt              DateTime @default(now()) @map("created_at")
   updatedAt              DateTime @updatedAt @map("updated_at")
   user                   User     @relation(fields: [userId], references: [id])
@@ -95,7 +95,7 @@ model Transaction {
   reference     String?
   userId        Int      @map("user_id")
   paymentMethod String?  @map("payment_method")
-  price         Decimal 
+  price         Decimal  @db.Decimal(20, 2)
   currency      String   @default("BRL")
   acceptBonus   Boolean  @default(false) @map("accept_bonus")
   status        Int      @default(0)
@@ -110,7 +110,7 @@ model Deposit {
   id        Int      @id @default(autoincrement())
   paymentId String?  @map("payment_id")
   userId    Int      @map("user_id")
-  amount    Decimal 
+  amount    Decimal  @db.Decimal(20, 2)
   type      String?
   proof     String?
   currency  String   @default("BRL")
@@ -126,7 +126,7 @@ model Deposit {
 model Withdrawal {
   id        Int      @id @default(autoincrement())
   userId    Int      @map("user_id")
-  amount    Decimal 
+  amount    Decimal  @db.Decimal(20, 2)
   type      String?
   proof     String?
   currency  String   @default("BRL")
@@ -144,9 +144,9 @@ model Withdrawal {
 model WalletChange {
   id            Int      @id @default(autoincrement())
   userId        Int      @map("user_id")
-  amount        Decimal 
-  beforeBalance Decimal  @map("before_balance")
-  afterBalance  Decimal  @map("after_balance")
+  amount        Decimal  @db.Decimal(20, 2)
+  beforeBalance Decimal  @map("before_balance") @db.Decimal(20, 2)
+  afterBalance  Decimal  @map("after_balance") @db.Decimal(20, 2)
   type          String
   description   String?
   createdAt     DateTime @default(now()) @map("created_at")
@@ -158,7 +158,7 @@ model WalletChange {
 model SystemWallet {
   id        Int      @id @default(autoincrement())
   label     String
-  value     Decimal 
+  value     Decimal  @db.Decimal(20, 2)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -320,7 +320,7 @@ model Mission {
   challengeLink        String?       @map("challenge_link")
   challengeStartDate   DateTime      @map("challenge_start_date")
   challengeEndDate     DateTime      @map("challenge_end_date")
-  challengeBonus       Decimal       @map("challenge_bonus")
+  challengeBonus       Decimal       @map("challenge_bonus") @db.Decimal(20, 2)
   challengeTotal       Int           @map("challenge_total")
   influencerWinLength  Int?          @map("influencer_winLength")
   influencerLoseLength Int?          @map("influencer_loseLength")
@@ -355,11 +355,11 @@ model AffiliateHistory {
   userId           Int      @map("user_id")
   affiliateId      Int      @map("affiliate_id")
   commissionType   String   @map("commission_type")
-  commissionValue  Decimal  @map("commission_value")
+  commissionValue  Decimal  @map("commission_value") @db.Decimal(20, 2)
   gameProvider     String?  @map("game_provider")
   gameId           String?  @map("game_id")
-  transactionValue Decimal? @map("transaction_value")
-  receita          Decimal?
+  transactionValue Decimal? @map("transaction_value") @db.Decimal(20, 2)
+  receita          Decimal? @db.Decimal(20, 2)
   isPaid           Boolean  @default(false) @map("is_paid")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
@@ -371,7 +371,7 @@ model AffiliateHistory {
 model AffiliateWithdraw {
   id        Int      @id @default(autoincrement())
   userId    Int      @map("user_id")
-  amount    Decimal 
+  amount    Decimal  @db.Decimal(20, 2)
   proof     String?
   status    Int      @default(0)
   pixKey    String?  @map("pix_key")
@@ -398,8 +398,8 @@ model Vip {
   id        Int       @id @default(autoincrement())
   level     Int       @unique
   name      String
-  minPoints Decimal   @map("min_points")
-  maxPoints Decimal   @map("max_points")
+  minPoints Decimal   @map("min_points") @db.Decimal(20, 2)
+  maxPoints Decimal   @map("max_points") @db.Decimal(20, 2)
   benefits  String?
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -412,7 +412,7 @@ model VipUser {
   id        Int      @id @default(autoincrement())
   userId    Int      @unique @map("user_id")
   vipId     Int      @map("vip_id")
-  points    Decimal  @default(0)
+  points    Decimal  @default(0) @db.Decimal(20, 2)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   user      User     @relation(fields: [userId], references: [id])
@@ -450,19 +450,19 @@ model Setting {
   softwareFavicon      String?  @map("software_favicon")
   currencyCode         String   @default("BRL") @map("currency_code")
   prefix               String   @default("R$")
-  minDeposit           Decimal  @default(5) @map("min_deposit")
-  maxDeposit           Decimal  @default(10000) @map("max_deposit")
-  minWithdrawal        Decimal  @default(20) @map("min_withdrawal")
-  maxWithdrawal        Decimal  @default(5000) @map("max_withdrawal")
-  depositBonus         Decimal  @default(0) @map("deposit_bonus")
-  depositBonusRollover Decimal  @default(0) @map("deposit_bonus_rollover")
+  minDeposit           Decimal  @default(5) @map("min_deposit") @db.Decimal(20, 2)
+  maxDeposit           Decimal  @default(10000) @map("max_deposit") @db.Decimal(20, 2)
+  minWithdrawal        Decimal  @default(20) @map("min_withdrawal") @db.Decimal(20, 2)
+  maxWithdrawal        Decimal  @default(5000) @map("max_withdrawal") @db.Decimal(20, 2)
+  depositBonus         Decimal  @default(0) @map("deposit_bonus") @db.Decimal(5, 2)
+  depositBonusRollover Decimal  @default(0) @map("deposit_bonus_rollover") @db.Decimal(10, 2)
   depositBonusFirstOnly Boolean @default(true) @map("deposit_bonus_first_only")
   rolloverProtection   Boolean  @default(false) @map("rollover_protection")
   disableSpin          Boolean  @default(false) @map("disable_spin")
   asaasIsEnable        Boolean  @default(false) @map("asaas_is_enable")
-  affiliateBaseline    Decimal  @default(0) @map("affiliate_baseline")
-  signupBonus          Decimal  @default(0) @map("signup_bonus")
-  referralBonus        Decimal  @default(50) @map("referral_bonus")
+  affiliateBaseline    Decimal  @default(0) @map("affiliate_baseline") @db.Decimal(5, 2)
+  signupBonus          Decimal  @default(0) @map("signup_bonus") @db.Decimal(20, 2)
+  referralBonus        Decimal  @default(50) @map("referral_bonus") @db.Decimal(20, 2)
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
@@ -472,9 +472,9 @@ model Setting {
 model RolloverHistory {
   id             Int      @id @default(autoincrement())
   userId         Int      @map("user_id")
-  betAmount      Decimal  @map("bet_amount")
-  rolloverBefore Decimal  @map("rollover_before")
-  rolloverAfter  Decimal  @map("rollover_after")
+  betAmount      Decimal  @map("bet_amount") @db.Decimal(20, 2)
+  rolloverBefore Decimal  @map("rollover_before") @db.Decimal(20, 2)
+  rolloverAfter  Decimal  @map("rollover_after") @db.Decimal(20, 2)
   rolloverType   String   @map("rollover_type") // 'bonus' ou 'deposit'
   gameCode       String?  @map("game_code")
   createdAt      DateTime @default(now()) @map("created_at")
