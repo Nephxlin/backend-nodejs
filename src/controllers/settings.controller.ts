@@ -183,7 +183,7 @@ export class SettingsController {
   }
 
   /**
-   * Obter pixels Kwai ativos (públicos, sem access token)
+   * Obter pixels Kwai ativos (públicos, com access token)
    */
   async getKwaiPixels(_req: Request, res: Response): Promise<Response> {
     try {
@@ -194,8 +194,8 @@ export class SettingsController {
         select: {
           id: true,
           pixelId: true,
+          accessToken: true,
           name: true,
-          // Não retornar accessToken para segurança
         },
         orderBy: {
           createdAt: 'desc',
