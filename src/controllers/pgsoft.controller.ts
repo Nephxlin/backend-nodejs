@@ -11,9 +11,10 @@ export class PGSoftController {
     try {
       const { user_code } = req.body;
 
-      logger.info(`PGSoft Callback: Obtendo saldo do usuário ${user_code}`);
+      logger.info(`[PGSOFT] user_balance - Request recebido:`, req.body);
 
       if (!user_code) {
+        logger.warn(`[PGSOFT] user_balance - user_code não fornecido`);
         return res.json({
           status: 0,
           msg: 'ERROR',
@@ -28,6 +29,7 @@ export class PGSoftController {
       });
 
       if (!user || !user.wallet) {
+        logger.warn(`[PGSOFT] user_balance - Usuário ${user_code} não encontrado`);
         return res.json({
           status: 0,
           msg: 'ERROR',
@@ -37,15 +39,29 @@ export class PGSoftController {
 
       const totalBalance = Number(user.wallet.balance) + Number(user.wallet.balanceBonus);
 
-      logger.info(`PGSoft Callback: Saldo do usuário ${user_code}: ${totalBalance}`);
+      logger.info(`[PGSOFT] user_balance - Usuário: ${user_code}, Saldo: ${totalBalance}`);
 
-      return res.json({
+      // Verificar se tem saldo suficiente (pelo menos maior que 0)
+      if (totalBalance <= 0) {
+        logger.warn(`[PGSOFT] user_balance - Saldo insuficiente para ${user_code}: ${totalBalance}`);
+        return res.json({
+          status: 0,
+          msg: 'INSUFFICIENT_USER_FUNDS',
+          user_balance: parseFloat(totalBalance.toFixed(2))
+        });
+      }
+
+      const response = {
         status: 1,
         msg: 'SUCCESS',
         user_balance: parseFloat(totalBalance.toFixed(2))
-      });
+      };
+
+      logger.info(`[PGSOFT] user_balance - Resposta:`, response);
+
+      return res.json(response);
     } catch (error: any) {
-      logger.error('PGSoft Callback Error:', error);
+      logger.error('[PGSOFT] user_balance - Erro:', error);
       return res.json({
         status: 0,
         msg: 'ERROR',

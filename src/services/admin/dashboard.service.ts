@@ -8,6 +8,11 @@ export class AdminDashboardService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Data de 7 dias atrás para estatísticas de cancelamento
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
     const [
       totalUsers,
       activeUsersToday,
@@ -17,7 +22,10 @@ export class AdminDashboardService {
       pendingWithdrawals,
       depositsToday,
       withdrawalsToday,
-      systemWallet,
+      canceledDepositsToday,
+      canceledDepositsWeek,
+      canceledWithdrawalsToday,
+      canceledWithdrawalsWeek,
     ] = await Promise.all([
       // Total de usuários
       prisma.user.count(),
@@ -60,13 +68,17 @@ export class AdminDashboardService {
       }),
 
       // Depósitos pendentes
-      prisma.deposit.count({
+      prisma.deposit.aggregate({
         where: { status: 0 },
+        _sum: { amount: true },
+        _count: true,
       }),
 
       // Saques pendentes
-      prisma.withdrawal.count({
+      prisma.withdrawal.aggregate({
         where: { status: 0 },
+        _sum: { amount: true },
+        _count: true,
       }),
 
       // Depósitos hoje
@@ -89,11 +101,44 @@ export class AdminDashboardService {
         _count: true,
       }),
 
-      // Saldo total do sistema
-      prisma.wallet.aggregate({
-        _sum: {
-          balance: true,
+      // Depósitos cancelados automaticamente hoje
+      prisma.deposit.aggregate({
+        where: {
+          status: 2, // Não pago/Cancelado
+          updatedAt: { gte: today }, // Atualizados hoje (cancelados hoje)
         },
+        _sum: { amount: true },
+        _count: true,
+      }),
+
+      // Depósitos cancelados automaticamente nos últimos 7 dias
+      prisma.deposit.aggregate({
+        where: {
+          status: 2, // Não pago/Cancelado
+          updatedAt: { gte: sevenDaysAgo }, // Atualizados nos últimos 7 dias
+        },
+        _sum: { amount: true },
+        _count: true,
+      }),
+
+      // Saques cancelados automaticamente hoje
+      prisma.withdrawal.aggregate({
+        where: {
+          status: 2, // Não pago/Cancelado
+          updatedAt: { gte: today }, // Atualizados hoje (cancelados hoje)
+        },
+        _sum: { amount: true },
+        _count: true,
+      }),
+
+      // Saques cancelados automaticamente nos últimos 7 dias
+      prisma.withdrawal.aggregate({
+        where: {
+          status: 2, // Não pago/Cancelado
+          updatedAt: { gte: sevenDaysAgo }, // Atualizados nos últimos 7 dias
+        },
+        _sum: { amount: true },
+        _count: true,
       }),
     ]);
 
@@ -107,10 +152,23 @@ export class AdminDashboardService {
           value: totalDepositsValue._sum.amount || 0,
           count: totalDepositsValue._count,
         },
-        pending: pendingDeposits,
+        pending: {
+          value: pendingDeposits._sum.amount || 0,
+          count: pendingDeposits._count,
+        },
         today: {
           value: depositsToday._sum.amount || 0,
           count: depositsToday._count,
+        },
+        canceled: {
+          today: {
+            value: canceledDepositsToday._sum.amount || 0,
+            count: canceledDepositsToday._count,
+          },
+          week: {
+            value: canceledDepositsWeek._sum.amount || 0,
+            count: canceledDepositsWeek._count,
+          },
         },
       },
       withdrawals: {
@@ -118,13 +176,26 @@ export class AdminDashboardService {
           value: totalWithdrawalsValue._sum.amount || 0,
           count: totalWithdrawalsValue._count,
         },
-        pending: pendingWithdrawals,
+        pending: {
+          value: pendingWithdrawals._sum.amount || 0,
+          count: pendingWithdrawals._count,
+        },
         today: {
           value: withdrawalsToday._sum.amount || 0,
           count: withdrawalsToday._count,
         },
+        canceled: {
+          today: {
+            value: canceledWithdrawalsToday._sum.amount || 0,
+            count: canceledWithdrawalsToday._count,
+          },
+          week: {
+            value: canceledWithdrawalsWeek._sum.amount || 0,
+            count: canceledWithdrawalsWeek._count,
+          },
+        },
       },
-      systemBalance: systemWallet._sum.balance || 0,
+      systemBalance: totalDepositsValue._sum.amount || 0,
       revenue:
         (totalDepositsValue._sum.amount?.toNumber() || 0) -
         (totalWithdrawalsValue._sum.amount?.toNumber() || 0),
@@ -132,12 +203,15 @@ export class AdminDashboardService {
   }
 
   /**
-   * Obter últimas transações
+   * Obter últimas transações com paginação
    */
-  async getRecentTransactions(limit: number = 10) {
+  async getRecentTransactions(page: number = 1, limit: number = 10) {
+    // Buscar mais transações para garantir que temos o suficiente após mesclagem
+    const fetchLimit = limit * 3;
+
     const [deposits, withdrawals] = await Promise.all([
       prisma.deposit.findMany({
-        take: limit,
+        take: fetchLimit,
         orderBy: { createdAt: 'desc' },
         include: {
           user: {
@@ -150,7 +224,7 @@ export class AdminDashboardService {
         },
       }),
       prisma.withdrawal.findMany({
-        take: limit,
+        take: fetchLimit,
         orderBy: { createdAt: 'desc' },
         include: {
           user: {
@@ -164,8 +238,8 @@ export class AdminDashboardService {
       }),
     ]);
 
-    // Combinar e ordenar
-    const transactions = [
+    // Combinar e ordenar todas as transações
+    const allTransactions = [
       ...deposits.map((d) => ({
         id: d.id,
         type: 'deposit' as const,
@@ -186,7 +260,106 @@ export class AdminDashboardService {
       })),
     ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-    return transactions.slice(0, limit);
+    // Contar total de transações
+    const [totalDeposits, totalWithdrawals] = await Promise.all([
+      prisma.deposit.count(),
+      prisma.withdrawal.count(),
+    ]);
+    const total = totalDeposits + totalWithdrawals;
+
+    // Aplicar paginação
+    const skip = (page - 1) * limit;
+    const paginatedTransactions = allTransactions.slice(skip, skip + limit);
+
+    return {
+      transactions: paginatedTransactions,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: skip + limit < total,
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  /**
+   * Obter transações canceladas automaticamente
+   */
+  async getCanceledTransactions(days: number = 7) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const [canceledDeposits, canceledWithdrawals] = await Promise.all([
+      prisma.deposit.findMany({
+        where: {
+          status: 2, // Não pago/Cancelado
+          updatedAt: { gte: startDate },
+        },
+        take: 50, // Limitar a 50 registros
+        orderBy: { updatedAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      }),
+      prisma.withdrawal.findMany({
+        where: {
+          status: 2, // Não pago/Cancelado
+          updatedAt: { gte: startDate },
+        },
+        take: 50, // Limitar a 50 registros
+        orderBy: { updatedAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Combinar e ordenar por data de cancelamento
+    const allCanceled = [
+      ...canceledDeposits.map((d) => ({
+        id: d.id,
+        type: 'deposit' as const,
+        userId: d.userId,
+        user: d.user,
+        amount: d.amount,
+        status: d.status,
+        createdAt: d.createdAt,
+        canceledAt: d.updatedAt,
+        waitTime: Math.floor(
+          (d.updatedAt.getTime() - d.createdAt.getTime()) / 60000
+        ), // em minutos
+      })),
+      ...canceledWithdrawals.map((w) => ({
+        id: w.id,
+        type: 'withdrawal' as const,
+        userId: w.userId,
+        user: w.user,
+        amount: w.amount,
+        status: w.status,
+        createdAt: w.createdAt,
+        canceledAt: w.updatedAt,
+        waitTime: Math.floor(
+          (w.updatedAt.getTime() - w.createdAt.getTime()) / 60000
+        ), // em minutos
+      })),
+    ].sort((a, b) => b.canceledAt.getTime() - a.canceledAt.getTime());
+
+    return allCanceled;
   }
 
   /**

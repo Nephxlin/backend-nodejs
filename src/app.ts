@@ -1,10 +1,12 @@
 import express, { Application } from 'express';
 import cors from 'cors';
+import cron from 'node-cron';
 import { config } from './config/env';
 import { connectDatabase } from './config/database';
 import logger from './config/logger';
 import { errorMiddleware, notFoundMiddleware } from './middlewares/error.middleware';
 import { generalLimiter } from './middlewares/ratelimit.middleware';
+import autoCancelService from './services/auto-cancel.service';
 
 // Importar rotas
 import authRoutes from './routes/auth.routes';
@@ -104,6 +106,18 @@ async function startServer() {
   try {
     // Conectar ao banco
     await connectDatabase();
+
+    // Iniciar cronjob de auto-cancelamento
+    // Executa a cada 1 minuto
+    cron.schedule('* * * * *', async () => {
+      try {
+        await autoCancelService.run();
+      } catch (error) {
+        logger.error('[CRON] Erro ao executar auto-cancel:', error);
+      }
+    });
+    logger.info('⏰ Cronjob de auto-cancelamento iniciado (executa a cada 1 minuto)');
+    logger.info(`⏱️  Timeout configurado: ${autoCancelService.getTimeoutMinutes()} minutos`);
 
     // Iniciar servidor
     app.listen(config.port, () => {

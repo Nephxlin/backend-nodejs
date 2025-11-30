@@ -16,6 +16,7 @@ import { AdminMissionsController } from '../controllers/admin/missions.controlle
 import { AdminVipsController } from '../controllers/admin/vips.controller';
 import { AdminSettingsController } from '../controllers/admin/settings.controller';
 import { AdminKwaiPixelsController } from '../controllers/admin/kwai-pixels.controller';
+import { AdminPGSoftAgentsController } from '../controllers/admin/pgsoft-agents.controller';
 
 // Schemas
 import {
@@ -54,6 +55,7 @@ const missionsController = new AdminMissionsController();
 const vipsController = new AdminVipsController();
 const settingsController = new AdminSettingsController();
 const kwaiPixelsController = new AdminKwaiPixelsController();
+const pgsoftAgentsController = new AdminPGSoftAgentsController();
 
 // Todas as rotas requerem autenticação + admin
 router.use(authMiddleware);
@@ -70,6 +72,9 @@ router.get('/dashboard/transactions', (req, res) =>
 );
 router.get('/dashboard/revenue-chart', (req, res) =>
   dashboardController.getRevenueChart(req, res)
+);
+router.get('/dashboard/canceled-transactions', (req, res) =>
+  dashboardController.getCanceledTransactions(req, res)
 );
 
 // ============================================
@@ -334,6 +339,25 @@ router.delete('/kwai-pixels/:id', (req, res) =>
 );
 router.post('/kwai-pixels/:id/toggle-status', (req, res) =>
   kwaiPixelsController.togglePixelStatus(req, res)
+);
+
+// ============================================
+// PGSOFT AGENTS
+// ============================================
+router.get('/pgsoft/agents', (req, res) =>
+  pgsoftAgentsController.listAgents(req, res)
+);
+router.get('/pgsoft/agents/:id', (req, res) =>
+  pgsoftAgentsController.getAgent(req, res)
+);
+router.post('/pgsoft/agents', (req, res) =>
+  pgsoftAgentsController.createAgent(req, res)
+);
+router.put('/pgsoft/agents/:id', (req, res) =>
+  pgsoftAgentsController.updateAgent(req, res)
+);
+router.delete('/pgsoft/agents/:id', (req, res) =>
+  pgsoftAgentsController.deleteAgent(req, res)
 );
 
 export default router;
