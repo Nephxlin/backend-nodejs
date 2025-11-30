@@ -2,26 +2,30 @@ import { Request, Response } from 'express';
 import axios from 'axios';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { config } from '../../config/env';
 
 export class AdminPGSoftAgentsController {
   /**
    * Listar todos os agents do motor PGSoft
    * GET /api/admin/pgsoft/agents
    */
-  async listAgents(req: Request, res: Response): Promise<Response> {
+  async listAgents(_req: Request, res: Response): Promise<Response> {
     try {
       // Buscar URL da API PGSoft das configurações
       const gamesKeys = await prisma.gamesKey.findFirst();
 
-      if (!gamesKeys || !gamesKeys.pgsoft) {
+      // Prioriza variável de ambiente (útil para desenvolvimento)
+      const pgsoftUrl = config.pgsoft.apiUrl || gamesKeys?.pgsoft;
+
+      if (!pgsoftUrl) {
         return res.status(400).json({
           error: 'URL da API PGSoft não configurada',
-          message: 'Configure a URL da API PGSoft nas configurações de jogos'
+          message: 'Configure a URL da API PGSoft nas configurações de jogos ou defina PGSOFT_API_URL no .env'
         });
       }
 
       // Fazer request para API PGSoft
-      const response = await axios.get(`${gamesKeys.pgsoft}/api/v1/agents`, {
+      const response = await axios.get(`${pgsoftUrl}/api/v1/agents`, {
         timeout: 10000
       });
 
@@ -90,21 +94,23 @@ export class AdminPGSoftAgentsController {
     try {
       const gamesKeys = await prisma.gamesKey.findFirst();
 
-      if (!gamesKeys || !gamesKeys.pgsoft) {
+      const pgsoftUrl = config.pgsoft.apiUrl || gamesKeys?.pgsoft;
+
+      if (!pgsoftUrl) {
         return res.status(400).json({
           error: 'URL da API PGSoft não configurada'
         });
       }
 
       // Se callbackurl não for fornecida, usar apiEndpoint
-      if (!req.body.callbackurl && gamesKeys.apiEndpoint) {
+      if (!req.body.callbackurl && gamesKeys?.apiEndpoint) {
         req.body.callbackurl = gamesKeys.apiEndpoint.endsWith('/')
           ? `${gamesKeys.apiEndpoint}api/`
           : `${gamesKeys.apiEndpoint}/api/`;
       }
 
       const response = await axios.post(
-        `${gamesKeys.pgsoft}/api/v1/agents`,
+        `${pgsoftUrl}/api/v1/agents`,
         req.body,
         { timeout: 10000 }
       );
@@ -136,14 +142,18 @@ export class AdminPGSoftAgentsController {
 
       const gamesKeys = await prisma.gamesKey.findFirst();
 
-      if (!gamesKeys || !gamesKeys.pgsoft) {
+      const pgsoftUrl = config.pgsoft.apiUrl || gamesKeys?.pgsoft;
+
+      if (!pgsoftUrl) {
         return res.status(400).json({
           error: 'URL da API PGSoft não configurada'
         });
       }
 
+      logger.info(`[PGSOFT AGENTS] Atualizando agent ${id} em: ${pgsoftUrl}`);
+
       const response = await axios.put(
-        `${gamesKeys.pgsoft}/api/v1/agents/${id}`,
+        `${pgsoftUrl}/api/v1/agents/${id}`,
         req.body,
         { timeout: 10000 }
       );
@@ -175,14 +185,16 @@ export class AdminPGSoftAgentsController {
 
       const gamesKeys = await prisma.gamesKey.findFirst();
 
-      if (!gamesKeys || !gamesKeys.pgsoft) {
+      const pgsoftUrl = config.pgsoft.apiUrl || gamesKeys?.pgsoft;
+
+      if (!pgsoftUrl) {
         return res.status(400).json({
           error: 'URL da API PGSoft não configurada'
         });
       }
 
       const response = await axios.delete(
-        `${gamesKeys.pgsoft}/api/v1/agents/${id}`,
+        `${pgsoftUrl}/api/v1/agents/${id}`,
         { timeout: 10000 }
       );
 
