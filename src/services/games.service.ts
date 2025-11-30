@@ -1,6 +1,7 @@
 import prisma from '../config/database';
 import axios from 'axios';
 import logger from '../config/logger';
+import { config } from '../config/env';
 
 export class GamesService {
   /**
@@ -193,12 +194,22 @@ export class GamesService {
       // Buscar credenciais PGSoft (igual ao cassino-cactus)
       const gamesKey = await prisma.gamesKey.findFirst();
 
-      if (!gamesKey || !gamesKey.pgsoft) {
+      if (!gamesKey) {
         logger.error('PGSoft: Credenciais não configuradas');
         throw new Error('Credenciais PGSoft não configuradas');
       }
 
-      const pgsoftApiUrl = gamesKey.pgsoft;
+      // Priorizar variável de ambiente para a URL da API (útil para desenvolvimento local)
+      let pgsoftApiUrl = config.pgsoft.apiUrl || gamesKey.pgsoft;
+      
+      if (!pgsoftApiUrl) {
+        logger.error('PGSoft: URL da API não configurada');
+        throw new Error('URL da API PGSoft não configurada');
+      }
+      
+      // Remover /api ou /api/ do final da URL para evitar duplicação
+      pgsoftApiUrl = pgsoftApiUrl.replace(/\/api\/?$/, '');
+      
       const agentToken = gamesKey.agentToken || '';
       const secretKey = gamesKey.pgsoftSecretKey || '';
       const gameUrl = gamesKey.pgsoftGameUrl || '';

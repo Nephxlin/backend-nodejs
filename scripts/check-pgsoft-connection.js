@@ -58,7 +58,9 @@ async function main() {
         console.log(chalk.yellow('\n2️⃣  Testando conectividade com a API PGSoft...'))
         
         try {
-          const testUrl = `${gamesKey.pgsoft}/api/v1/game_launch`
+          // Remover /api ou /api/ do final da URL para evitar duplicação
+          let pgsoftApiUrl = gamesKey.pgsoft.replace(/\/api\/?$/, '');
+          const testUrl = `${pgsoftApiUrl}/api/v1/game_launch`
           console.log(chalk.gray(`   Endpoint: ${testUrl}`))
           
           const testPayload = {
